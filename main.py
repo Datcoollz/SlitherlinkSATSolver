@@ -1,21 +1,18 @@
-import SlitherlinkSatSolver as SSolver
-import SlitherlinkPuzzle as SPuzzle
+from Solver1 import SlitherlinkPuzzle as SPuzzle, SlitherlinkSatSolver as SSolver
+from Solver2 import SlitherlinkSatSolver2 as SSolver2
 import pygame
 import math
-import Test.slitherlink as SL
 import ExamplePuzzle as Example
 from threading import Thread
-from time import perf_counter
 
 pygame.init()
 pygame.font.init()
 pygame.display.set_caption("Slitherlink solver")
 
-screen_width, screen_height = (700, 700)
+screen_width, screen_height = (900, 900)
 screen = pygame.display.set_mode((screen_width, screen_height))
 screen.fill((173, 202, 247))
 
-# my_font = pygame.font.SysFont(my_font, 30)
 my_font = "Times new roman"
 
 
@@ -67,7 +64,19 @@ def draw_text(pos=(0, 0), text="", color=(0, 0, 0), size=30):
     screen.blit(text, text_rect)
 
 
-def main():
+def main(use_solver_1=True, input_puzzle=None):
+    # Solver 1
+    example_puzzle = SPuzzle.Puzzle(initial_puzzle=input_puzzle)
+    solver1 = SSolver.Solver(example_puzzle)
+
+    # Solver 2
+    solver2 = SSolver2.Solver(input_puzzle)
+
+    if not use_solver_1:
+        Thread(target=solver2.solve_puzzle).start()
+    else:
+        Thread(target=solver1.solve).start()
+
     pygame.display.flip()
     running = True
 
@@ -85,36 +94,60 @@ def main():
     text = font.render(f"Solving...", False, (0, 0, 0))
     text_rect = text.get_rect(center=(screen_width / 2, screen_height / 2))
     screen.blit(text, text_rect)
+    print("Draw")
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
         if not puzzle_drawn:
-            if solver.is_solved():
-                screen.fill((173, 202, 247))
-                font = pygame.font.SysFont(my_font, 50)
-                text = font.render(f"Solving completed, drawing...", False, (0, 0, 0))
-                text_rect = text.get_rect(center=(screen_width / 2, screen_height / 2))
-                screen.blit(text, text_rect)
-                pygame.display.flip()
+            if use_solver_1:
+                if not solver1.is_solved(): continue
+            else:
+                if not solver2.is_solved(): continue
+
+            if (use_solver_1 and solver1.get_sol() is None) or (not use_solver_1 and solver2.get_sol() is None):
                 screen.fill((173, 202, 247))
                 font = pygame.font.SysFont(my_font, size=25)
-                text = font.render(f"Solve time: {solver.solve_time()}s, reload time: {solver.reload_time()}", False,
-                                   (0, 0, 0))
+                text = font.render(f"Unsolvable", False, (0, 0, 0))
                 text_rect = text.get_rect(center=(screen_width / 2, 100 / 2))
                 screen.blit(text, text_rect)
-                draw_solution(solution=solver.get_sol(), puzzle=example_puzzle, start_pos=start_pos,
-                              line_len=line_length)
+
+                draw_puzzle(puzzle=example_puzzle, start_pos=start_pos, line_len=line_length)
+
+                pygame.display.flip()
                 puzzle_drawn = True
+                continue
+
+            # Set screen to drawing notification screen
+            screen.fill((173, 202, 247))
+            font = pygame.font.SysFont(my_font, 50)
+            text = font.render(f"Solving completed, drawing...", False, (0, 0, 0))
+            text_rect = text.get_rect(center=(screen_width / 2, screen_height / 2))
+            screen.blit(text, text_rect)
+            pygame.display.flip()
+
+            # Draw solution
+            screen.fill((173, 202, 247))
+            if use_solver_1:
+                solve_time = solver1.solve_time()
+                reload_time = solver1.reload_time()
+                solution = solver1.get_sol()
+            else:
+                solve_time = solver2.solve_time()
+                reload_time = solver2.reload_time()
+                solution = solver2.get_sol()
+            font = pygame.font.SysFont(my_font, size=25)
+            text = font.render(f"Solve time: {solve_time}s, reload time: {reload_time}", False, (0, 0, 0))
+            text_rect = text.get_rect(center=(screen_width / 2, 100 / 2))
+            screen.blit(text, text_rect)
+
+            draw_solution(solution=solution, puzzle=example_puzzle, start_pos=start_pos, line_len=line_length)
+            puzzle_drawn = True
         if pygame.key.get_pressed()[pygame.K_ESCAPE]:
             running = False
         pygame.display.flip()
 
 
 if __name__ == '__main__':
-    example_puzzle = SPuzzle.Puzzle(initial_puzzle=Example.puzzle_25_30_2)
-
-    solver = SSolver.Solver(example_puzzle)
-    Thread(target=solver.solve).start()
-    main()
+    main(use_solver_1=False, input_puzzle=Example.puzzle_30x30_1)

@@ -1,6 +1,6 @@
 from pysat.solvers import Lingeling
 import time
-import SlitherlinkPuzzle
+from Solver1 import SlitherlinkPuzzle
 
 
 class Solver:
@@ -91,25 +91,25 @@ class Solver:
         self._generate_tile_restriction_clauses()
         self._generate_point_restriction_clauses()
         while True:
-            # self._solver.solve()
             s = Lingeling(bootstrap_with=self._clauses)
             s.solve()
             self._model = s.get_model()
+            if self._model is None:
+                print("Unsolvable")
+                self._solved = True
+                return
             if self._is_valid_solution():
                 break
             else:
                 self._reload_time += 1
-                # print(f"Tries {self._reload_time}")
                 self._generate_loop_restriction_clauses()
         solve_time = time.perf_counter() - start_time
-        # print(f"Solve time: {solve_time}, took {self._reload_time} tries")
-        # print(self._solver.get_model())
         self._solve_time = solve_time
         self._solved = True
+        print("Solve complete")
         return
 
     def _generate_loop_restriction_clauses(self):
-        #if self._solver.get_model() is None:
         if not self._model:
             return
         new_clauses = []
@@ -124,18 +124,13 @@ class Solver:
                     for side in loop_sides:
                         clause.append(-side)
                     new_clauses.append(clause)
-                    # self._solver.add_clause(clause)
         for i in new_clauses:
-            # self._solver.add_clause(i)
             self._clauses.append(i[:])
         return
 
     def _is_valid_solution(self):
-        # if self._solver.get_model() is None:
         if not self._model:
             return
-        # print(self._solver.get_model())
-        # print(self._model, "\n")
         check = self.get_sol()
         checked = False
         for i in range(self._height):
@@ -164,23 +159,18 @@ class Solver:
         for i in range(self._height):
             check.append([False] * self._width)
         for i in range(self._height):
-            # if self._solver.get_model()[self._tile_sat_var[i][0]["left"] - 1] < 0:
             if self._model[self._tile_sat_var[i][0]["left"] - 1] < 0:
                 self._check_and_fill(check, i, 0)
-            # if self._solver.get_model()[self._tile_sat_var[i][self._width - 1]["right"] - 1] < 0:
             if self._model[self._tile_sat_var[i][self._width - 1]["right"] - 1] < 0:
                 self._check_and_fill(check, i, self._width - 1)
         for j in range(self._width):
-            # if self._solver.get_model()[self._tile_sat_var[0][j]["up"] - 1] < 0:
             if self._model[self._tile_sat_var[0][j]["up"] - 1] < 0:
                 self._check_and_fill(check, 0, j)
-            # if self._solver.get_model()[self._tile_sat_var[self._height - 1][j]["down"] - 1] < 0:
             if self._model[self._tile_sat_var[self._height - 1][j]["down"] - 1] < 0:
                 self._check_and_fill(check, self._height - 1, j)
         return check
 
     def _check_and_fill(self, check, x, y):
-        # print("Check", x, y)
         if x < 0 or y < 0 or x >= self._height or y >= self._width:
             return []
         if check[x][y]:
@@ -188,10 +178,6 @@ class Solver:
         loop_sides = []
         check[x][y] = True
         up, down, left, right = (
-            # self._solver.get_model()[self._tile_sat_var[x][y]["up"] - 1],
-            # self._solver.get_model()[self._tile_sat_var[x][y]["down"] - 1],
-            # self._solver.get_model()[self._tile_sat_var[x][y]["left"] - 1],
-            # self._solver.get_model()[self._tile_sat_var[x][y]["right"] - 1],
             self._model[self._tile_sat_var[x][y]["up"] - 1],
             self._model[self._tile_sat_var[x][y]["down"] - 1],
             self._model[self._tile_sat_var[x][y]["left"] - 1],
@@ -256,7 +242,6 @@ def _get_encoding(var_list, num, encoding_type):
                 c.append(var_list[i])
         return_clauses.append(c)
         if not encoding_increment(clause, clause_size, count, clause_size - 1):
-            # print(f"{return_clauses} {encoding_type} {num} END")
             break
     return return_clauses
 
