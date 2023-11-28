@@ -1,3 +1,4 @@
+import ExamplePuzzle
 from Solver1 import SlitherlinkPuzzle as SPuzzle, SlitherlinkSatSolver as SSolver
 from Solver2 import SlitherlinkSatSolver2 as SSolver2
 import pygame
@@ -150,4 +151,31 @@ def main(use_solver_1=True, input_puzzle=None):
 
 
 if __name__ == '__main__':
-    main(use_solver_1=False, input_puzzle=Example.puzzle_30x30_1)
+    puzzle_list = [
+        ExamplePuzzle.puzzle_5x5_1,
+        ExamplePuzzle.puzzle_5x5_2,
+        ExamplePuzzle.puzzle_5x5_3,
+        ExamplePuzzle.puzzle_7x7_1,
+        ExamplePuzzle.puzzle_8x8_1,
+        ExamplePuzzle.puzzle_10x10_1,
+        ExamplePuzzle.puzzle_10x10_2,
+        ExamplePuzzle.puzzle_15x15_1,
+        ExamplePuzzle.puzzle_15x15_2,
+        ExamplePuzzle.puzzle_20x20_1,
+        ExamplePuzzle.puzzle_20x20_2,
+        ExamplePuzzle.puzzle_25x25_1,
+        ExamplePuzzle.puzzle_25_30_1,
+        ExamplePuzzle.puzzle_25_30_2,
+        ExamplePuzzle.puzzle_30x30_1,
+        ExamplePuzzle.puzzle_36x36_1,
+    ]
+    for p in puzzle_list:
+        sol = SSolver.Solver(SPuzzle.Puzzle(p))
+        sol.solve()
+        print("Puzzle of size", sol._width, sol._height)
+        print(len(sol._model))
+        print(len(sol._clauses))
+        print(sol.reload_time())
+        print(sol.solve_time())
+        print()
+    # main(use_solver_1=False, input_puzzle=Example.puzzle_36x36_1)

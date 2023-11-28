@@ -1,7 +1,9 @@
 from Solver2.SlitherlinkBoard import Board
 from pysat.solvers import Glucose42
 import time
+import sys
 
+sys.setrecursionlimit(1500)
 
 class Solver:
     def __init__(self, puzzle: list) -> None:
@@ -193,6 +195,7 @@ class Solver:
         self.prepare_clauses()
         self.solve()
         self.handle_third_rule()
+        self.solved = True
         self._solve_time = time.perf_counter() - start_time
 
     def handle_third_rule(self) -> None:
@@ -201,7 +204,6 @@ class Solver:
                 break
             self._reload_time += 1
             self.solve()
-        self.solved = True
 
     def solve(self) -> None:
         self.solved = False

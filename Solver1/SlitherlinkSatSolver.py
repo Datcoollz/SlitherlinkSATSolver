@@ -1,7 +1,9 @@
-from pysat.solvers import Lingeling
+from pysat.solvers import Glucose42
 import time
 from Solver1 import SlitherlinkPuzzle
+import sys
 
+sys.setrecursionlimit(1500)
 
 class Solver:
     def __init__(self, puzzle: SlitherlinkPuzzle.Puzzle):
@@ -91,7 +93,7 @@ class Solver:
         self._generate_tile_restriction_clauses()
         self._generate_point_restriction_clauses()
         while True:
-            s = Lingeling(bootstrap_with=self._clauses)
+            s = Glucose42(bootstrap_with=self._clauses)
             s.solve()
             self._model = s.get_model()
             if self._model is None:
