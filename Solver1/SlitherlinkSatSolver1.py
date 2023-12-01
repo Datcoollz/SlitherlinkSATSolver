@@ -1,12 +1,12 @@
 from pysat.solvers import Glucose42
 import time
-from Solver1 import SlitherlinkPuzzle
+from Solver1 import SlitherlinkPuzzle1
 import sys
 
 sys.setrecursionlimit(1500)
 
 class Solver:
-    def __init__(self, puzzle: SlitherlinkPuzzle.Puzzle):
+    def __init__(self, puzzle: SlitherlinkPuzzle1.Puzzle):
         self._input_puzzle = puzzle
         self._width = self._input_puzzle.width
         self._height = self._input_puzzle.height
@@ -60,17 +60,16 @@ class Solver:
                     at_least = _get_encoding(var, tile_value, "at_least")
                     for c in at_most:
                         if c:
-                            # self._solver.add_clause(c)
                             self._clauses.append(c)
                     for c in at_least:
                         if c:
-                            # self._solver.add_clause(c)
                             self._clauses.append(c)
         return
 
     def _generate_point_restriction_clauses(self):
         for i in range(self._height + 1):
             for j in range(self._width + 1):
+                cc = []
                 t = self._point_sat_var[i][j]
                 var = []
                 for v in t.values():
@@ -78,12 +77,12 @@ class Solver:
                         var.append(v)
                 clause = _get_encoding(var, 2, "at_most")
                 for c in clause:
-                    # self._solver.add_clause(c)
                     self._clauses.append(c[:])
+                    cc.append(c[:])
                 for index in range(len(var)):
                     var[index] = -var[index]
-                    # self._solver.add_clause(var)
                     self._clauses.append(var[:])
+                    cc.append(var[:])
                     var[index] = -var[index]
 
     def solve(self):
@@ -96,6 +95,7 @@ class Solver:
             s = Glucose42(bootstrap_with=self._clauses)
             s.solve()
             self._model = s.get_model()
+            self.print_solution()
             if self._model is None:
                 print("Unsolvable")
                 self._solved = True
@@ -153,8 +153,19 @@ class Solver:
     def reload_time(self):
         return self._reload_time
 
+    def clauses_count(self):
+        return len(self._clauses)
+
+    def var_count(self):
+        return len(self._model)
+
+    def width(self):
+        return self._width
+
+    def height(self):
+        return self._height
+
     def get_sol(self):
-        # if self._solver is None:
         if not self._model:
             return None
         check = []
@@ -209,13 +220,16 @@ class Solver:
 
     def print_solution(self):
         sol = self.get_sol()
+        if sol is None:
+            print("No solution found")
+            return
         for i in sol:
             s = ""
             for j in i:
                 if j:
                     s += " "
                 else:
-                    s += "0"
+                    s += "█"
             print(s)
         return
 

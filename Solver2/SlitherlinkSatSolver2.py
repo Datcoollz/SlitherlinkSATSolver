@@ -1,4 +1,4 @@
-from Solver2.SlitherlinkBoard import Board
+from Solver2.SlitherlinkPuzzle2 import Board
 from pysat.solvers import Glucose42
 import time
 import sys
