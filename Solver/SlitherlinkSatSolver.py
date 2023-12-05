@@ -88,7 +88,6 @@ class Solver:
                 for v in t.values():
                     if v != -1:
                         var.append(v)
-                print()
                 # This rule removes cases with 1 line
                 for index in range(len(var)):
                     var[index] = -var[index]
@@ -106,114 +105,111 @@ class Solver:
     def solve(self):
         self._solved = False
         start_time = time.perf_counter()
-        print("Start solving puzzle of size", self._input_puzzle.width(), "x", self._input_puzzle.height())
-        self._clauses = self._encode_first_rule() + self._encode_second_rule()
+        # print("Start solving puzzle of size", self._input_puzzle.width(), "x", self._input_puzzle.height())
+        self._clauses += self._encode_first_rule() + self._encode_second_rule()
+        print("Total clauses count", len(self._clauses))
         while True:
             s = Glucose42(bootstrap_with=self._clauses)
             s.solve()
-            self._model = s.get_model()
-            self.print_solution()
-            if self._model is None:
+            if s.get_model() is None:
                 print("Unsolvable")
+                self._model = None
                 self._unsolvable = True
                 return
-            if self._is_valid_solution():
+            self._model = [0] + s.get_model()
+            if self._encode_third_rule():
                 self._solved = True
                 break
             else:
                 self._reload_time += 1
-                self._encode_third_rule()
         solve_time = time.perf_counter() - start_time
         self._solve_time = solve_time
-        print(self._reload_time)
-        print("Solve complete")
+        print("Solve time", solve_time)
         return
 
     def _encode_third_rule(self):
         if not self._model:
             return
-        new_clauses = []
-        current_sol = self.get_sol()
-        for i in range(len(current_sol)):
-            for j in range(len(current_sol[i])):
-                if not current_sol[i][j]:
-                    # Get all the sides of a loop
-                    loop_sides = self._check_and_fill_connected_area(current_sol, i, j)
-                    clause = []
-                    # Reverse the values to get the clause
-                    for side in loop_sides:
-                        clause.append(-side)
-                    new_clauses.append(clause)
-        for i in new_clauses:
-            self._clauses.append(i[:])
-        return
-
-    def _is_valid_solution(self):
-        if not self._model:
-            return
         visited = self.get_sol()
-        found_one_loop = False
+        useful_loop_list = []
+        useless_loop_list = []
         for i in range(self._input_puzzle.height()):
             for j in range(self._input_puzzle.width()):
                 if not visited[i][j]:
-                    if found_one_loop:
-                        return False
-                    self._check_and_fill_connected_area(visited, i, j)
-                    found_one_loop = True
-        return True
+                    sides, is_useful_loop = self._check_and_fill_connected_area(visited, i, j)
+                    # print(self.reload_time(), is_useful_loop, sides)
+                    if is_useful_loop:
+                        useful_loop_list.append([-_ for _ in sides])
+                    else:
+                        useless_loop_list.append([-_ for _ in sides])
+        valid_solution = (len(useful_loop_list) == 1)
+        # If solution is valid, clear all useless loops
+        if valid_solution:
+            for useless_loop in useless_loop_list:
+                for side in useless_loop:
+                    self._model[-side] = -self._model[side - 1]
+        # Else add all loops into the solver
+        else:
+            self._clauses += useless_loop_list
+            self._clauses += useful_loop_list
+        return valid_solution
 
     def get_sol(self):
         if not self._model:
             return None
-        check = []
-        for i in range(self._input_puzzle.height()):
-            check.append([False] * self._input_puzzle.width())
-        for i in range(self._input_puzzle.height()):
-            if self._model[self._tile_sat_var[i][0]["left"] - 1] < 0:
+        h, w = (self._input_puzzle.height(), self._input_puzzle.width())
+        check = [[False for _ in range(w)] for __ in range(h)]
+        for i in range(h):
+            if self._model[self._tile_sat_var[i][0]["left"]] < 0:
                 self._check_and_fill_connected_area(check, i, 0)
-            if self._model[self._tile_sat_var[i][self._input_puzzle.width() - 1]["right"] - 1] < 0:
-                self._check_and_fill_connected_area(check, i, self._input_puzzle.width() - 1)
-        for j in range(self._input_puzzle.width()):
-            if self._model[self._tile_sat_var[0][j]["up"] - 1] < 0:
+            if self._model[self._tile_sat_var[i][w - 1]["right"]] < 0:
+                self._check_and_fill_connected_area(check, i, w - 1)
+        for j in range(w):
+            if self._model[self._tile_sat_var[0][j]["up"]] < 0:
                 self._check_and_fill_connected_area(check, 0, j)
-            if self._model[self._tile_sat_var[self._input_puzzle.height() - 1][j]["down"] - 1] < 0:
-                self._check_and_fill_connected_area(check, self._input_puzzle.height() - 1, j)
+            if self._model[self._tile_sat_var[h - 1][j]["down"]] < 0:
+                self._check_and_fill_connected_area(check, h - 1, j)
         return check
 
-    def _check_and_fill_connected_area(self, check, x, y):
+    def _check_and_fill_connected_area(self, check, x, y) -> (list, bool):
         if x < 0 or y < 0 or x >= self._input_puzzle.height() or y >= self._input_puzzle.width():
-            return []
+            return [], False
         if check[x][y]:
-            return []
+            return [], False
         loop_sides = []
         check[x][y] = True
-        up, down, left, right = (
-            self._model[self._tile_sat_var[x][y]["up"] - 1],
-            self._model[self._tile_sat_var[x][y]["down"] - 1],
-            self._model[self._tile_sat_var[x][y]["left"] - 1],
-            self._model[self._tile_sat_var[x][y]["right"] - 1]
-        )
-        if up < 0:
-            s = self._check_and_fill_connected_area(check, x - 1, y)
-            if s is not None: loop_sides.extend(s)
-        else:
-            loop_sides.append(up)
-        if down < 0:
-            s = self._check_and_fill_connected_area(check, x + 1, y)
-            if s is not None: loop_sides.extend(s)
-        else:
-            loop_sides.append(down)
-        if left < 0:
-            s = self._check_and_fill_connected_area(check, x, y - 1)
-            if s is not None: loop_sides.extend(s)
-        else:
-            loop_sides.append(left)
-        if right < 0:
-            s = self._check_and_fill_connected_area(check, x, y + 1)
-            if s is not None: loop_sides.extend(s)
-        else:
-            loop_sides.append(right)
-        return loop_sides
+        is_useful_loop = False
+        sides = [
+            ("up", (x - 1, y)),
+            ("down", (x + 1, y)),
+            ("left", (x, y - 1)),
+            ("right", (x, y + 1)),
+        ]
+        for side in sides:
+            name, pos = side
+            model_val = self._model[self._tile_sat_var[x][y][name]]
+            if model_val < 0:
+                s, ck = self._check_and_fill_connected_area(check, pos[0], pos[1])
+                if s is not None: loop_sides.extend(s)
+                if ck: is_useful_loop = True
+            else:
+                if self._relevant_line_check((x, y), name):
+                    is_useful_loop = True
+                loop_sides.append(model_val)
+        return loop_sides, is_useful_loop
+
+    def _relevant_line_check(self, pos, side):
+        # Check whether a line is next to tiles with number or not
+        x, y = pos
+        if not 0 <= self.puzzle().get_tile((x, y)) <= 4:
+            if (side == "up" and (x == 0 or not 0 <= self.puzzle().get_tile((x - 1, y)) <= 4)) or (
+                    side == "left" and (y == 0 or not 0 <= self.puzzle().get_tile((x, y - 1)) <= 4)) or (
+                    side == "down" and (
+                    x == self.puzzle_height() - 1 or not 0 <= self.puzzle().get_tile((x + 1, y)) <= 4)) or (
+                    side == "right" and (
+                    y == self.puzzle_width() - 1 or not 0 <= self.puzzle().get_tile((x, y + 1)) <= 4)):
+                return False
+        return True
 
     def print_solution(self):
         sol = self.get_sol()
@@ -246,7 +242,7 @@ class Solver:
         return len(self._clauses)
 
     def var_count(self):
-        return len(self._model)
+        return len(self._model) - 1
 
     def puzzle_width(self):
         return self._input_puzzle.width()

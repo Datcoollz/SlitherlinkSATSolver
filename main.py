@@ -34,7 +34,7 @@ def draw_puzzle(puzzle: Puzzle.Puzzle, start_pos=(0, 0), color=(0, 0, 0), line_l
 
 
 def draw_solution(solution, puzzle: Puzzle.Puzzle, start_pos=(0, 0), line_color=(0, 0, 0), line_len=25, line_width=0):
-    print("Start drawing solution")
+    # print("Start drawing solution")
     start_right, start_down = start_pos
     if line_width == 0:
         line_width = math.floor(line_len / 25) + 1
@@ -115,7 +115,7 @@ def solve_and_display(input_puzzle=None):
 
             # Draw solution
             screen.fill(screen_color)
-            solver.print_solution()
+            # solver.print_solution()
             solution = solver.get_sol()
             draw_text(f"Solved puzzle of size: {solver.puzzle_width()}x{solver.puzzle_height()}", (100, 100),
                       pivot_center=False)
@@ -153,62 +153,62 @@ if __name__ == '__main__':
         ExamplePuzzle.puzzle_36x36_1,
     ]
     # solve_and_display(ExamplePuzzle.puzzle_7x7_1)
-    p = ExamplePuzzle.puzzle_8x8_1
-    s = Solver1.Solver(Puzzle1.Puzzle(p))
-    s.solve()
-    print(s.reload_time(), s._clauses)
+    # p = ExamplePuzzle.puzzle_8x8_1
+    # s = Solver1.Solver(Puzzle1.Puzzle(p))
+    # s.solve()
+    # print(s.reload_time(), s._clauses)
 
     # s2 = Solver2.Solver(ExamplePuzzle.puzzle_8x8_1)
     # s2.solve()
     # s2.print_solution()
     # print(s2.reload_time(), s2._clauses)
 
-    solver = Solver.Solver(Puzzle.Puzzle(p))
-    solver.solve()
-    print(solver.reload_time(), solver._clauses)
+    # solver = Solver.Solver(Puzzle.Puzzle(p))
+    # solver.solve()
+    # print(solver.reload_time(), solver._clauses)
 
-    running = True
-    pw = screen_width * 0.75 / solver.puzzle_width()
-    ph = screen_height * 0.75 / solver.puzzle_height()
-    line_length = math.floor(pw / 2 if pw < ph else ph / 2)
-    start_pos = (
-        (screen_width - line_length * solver.puzzle_width()) * 5 / 6,
-        (screen_height - line_length * solver.puzzle_height()) / 2)
-    start_pos_2 = (
-        (screen_width - line_length * solver.puzzle_width()) * 1 / 6,
-        (screen_height - line_length * solver.puzzle_height()) / 2)
-    result_drawn = False
+    # running = True
+    # pw = screen_width * 0.75 / solver.puzzle_width()
+    # ph = screen_height * 0.75 / solver.puzzle_height()
+    # line_length = math.floor(pw / 2 if pw < ph else ph / 2)
+    # start_pos = (
+    #     (screen_width - line_length * solver.puzzle_width()) * 5 / 6,
+    #     (screen_height - line_length * solver.puzzle_height()) / 2)
+    # start_pos_2 = (
+    #     (screen_width - line_length * solver.puzzle_width()) * 1 / 6,
+    #     (screen_height - line_length * solver.puzzle_height()) / 2)
+    # result_drawn = False
+    #
+    # screen.fill(screen_color)
+    # font = pygame.font.SysFont(my_font, 100)
+    # text = font.render(f"Solving...", False, (0, 0, 0))
+    # text_rect = text.get_rect(center=(screen_width / 2, screen_height / 2))
+    # screen.blit(text, text_rect)
+    #
+    # while running:
+    #     for event in pygame.event.get():
+    #         if event.type == pygame.QUIT:
+    #             running = False
+    #     if not result_drawn:
+    #         if not solver.is_solved() and not solver.is_unsolvable():
+    #             continue
+    #         if not s.is_solved():
+    #             continue
+    #         # Draw solution
+    #         screen.fill(screen_color)
+    #         solution = solver.get_sol()
+    #         if solver.is_unsolvable():
+    #             draw_puzzle(puzzle=solver.puzzle(), start_pos=start_pos, line_len=line_length)
+    #         else:
+    #             draw_solution(solution=solution, puzzle=solver.puzzle(), start_pos=start_pos, line_len=line_length)
+    #         draw_solution(solution=s.get_sol(), puzzle=solver.puzzle(), start_pos=start_pos_2, line_len=line_length)
+    #         result_drawn = True
+    #     if pygame.key.get_pressed()[pygame.K_RETURN] and not enter_held:
+    #         enter_held = True
+    #         running = False
+    #     if not pygame.key.get_pressed()[pygame.K_RETURN]:
+    #         enter_held = False
+    #     pygame.display.flip()
 
-    screen.fill(screen_color)
-    font = pygame.font.SysFont(my_font, 100)
-    text = font.render(f"Solving...", False, (0, 0, 0))
-    text_rect = text.get_rect(center=(screen_width / 2, screen_height / 2))
-    screen.blit(text, text_rect)
-
-    while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-        if not result_drawn:
-            if not solver.is_solved() and not solver.is_unsolvable():
-                continue
-            if not s.is_solved():
-                continue
-            # Draw solution
-            screen.fill(screen_color)
-            solution = solver.get_sol()
-            if solver.is_unsolvable():
-                draw_puzzle(puzzle=solver.puzzle(), start_pos=start_pos, line_len=line_length)
-            else:
-                draw_solution(solution=solution, puzzle=solver.puzzle(), start_pos=start_pos, line_len=line_length)
-            draw_solution(solution=s.get_sol(), puzzle=solver.puzzle(), start_pos=start_pos_2, line_len=line_length)
-            result_drawn = True
-        if pygame.key.get_pressed()[pygame.K_RETURN] and not enter_held:
-            enter_held = True
-            running = False
-        if not pygame.key.get_pressed()[pygame.K_RETURN]:
-            enter_held = False
-        pygame.display.flip()
-
-    # for p in puzzle_list:
-    #     solve_and_display(p)
+    for p in puzzle_list:
+        solve_and_display(p)
