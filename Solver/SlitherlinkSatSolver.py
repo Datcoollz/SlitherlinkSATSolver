@@ -81,32 +81,32 @@ class Solver:
                         check = self._f((row, col + 1) if direction == "down" else (row + 1, col), direction)
                         if not check: return False
                         if val == 0 and adjacent_val == 3:
-                            self._f(next_to, direction)
                             for d in other_dir:
                                 if not self._f(next_to, d): return False
-                                if not self._f((row + 2, col) if direction == "down" else (row, col + 2),
-                                               d, False): return False
+                                t = (row + 2, col) if direction == "down" else (row, col + 2)
+                                if not self._f(t, d, False): return False
+                            if not self._f(next_to, direction): return False
                             if not self._f((row + 1, col + 1), direction, False): return False
-                            if not self._f((row + 1, col - 1) if direction == "down" else (row - 1, col + 1),
-                                           direction, False): return False
+                            t = (row + 1, col - 1) if direction == "down" else (row - 1, col + 1)
+                            if not self._f(t, direction, False): return False
                         else:
-                            if not self._f(pos, opposite_dir): return False
                             for d in other_dir:
                                 if not self._f((row, col), d): return False
-                                if not self._f((row - 1, col) if direction == "down" else (row, col - 1),
-                                               d, False): return False
-                            if not self._f((row, col - 1) if direction == "down" else (row - 1, col),
-                                           opposite_dir, False): return False
-                            if not self._f((row, col + 1) if direction == "down" else (row + 1, col),
-                                           opposite_dir, False): return False
+                                t = (row - 1, col) if direction == "down" else (row, col - 1)
+                                if not self._f(t, d, False): return False
+                            if not self._f(pos, opposite_dir): return False
+                            t = (row, col - 1) if direction == "down" else (row - 1, col)
+                            if not self._f(t, opposite_dir, False): return False
+                            t = (row, col + 1) if direction == "down" else (row + 1, col)
+                            if not self._f(t, opposite_dir, False): return False
                     # 3 next to 3
                     elif val == 3 and adjacent_val == 3:
                         if not self._f(pos, opposite_dir): return False
                         if not self._f(pos, direction): return False
-                        if not self._f((row, col - 1) if direction == "down" else (row - 1, col),
-                                       direction, False): return False
-                        if not self._f((row, col + 1) if direction == "down" else (row + 1, col),
-                                       direction, False): return False
+                        t = (row, col - 1) if direction == "down" else (row - 1, col)
+                        if not self._f(t, direction, False): return False
+                        t = (row, col + 1) if direction == "down" else (row + 1, col)
+                        if not self._f(t, direction, False): return False
                         if not self._f(next_to, direction): return False
 
                 tiles_diagonal_to = [((row + 1, col - 1), ("left", "down"), ("right", "up")),
@@ -121,8 +121,8 @@ class Solver:
                         if not self._f(diagonal_to, against[0]): return False
                         if not self._f(diagonal_to, against[1]): return False
                     elif val == 3 and diagonal_val == 0:
-                        if not self._f((row, col), toward[0]): return False
-                        if not self._f((row, col), toward[1]): return False
+                        if not self._f(pos, toward[0]): return False
+                        if not self._f(pos, toward[1]): return False
                     # 3 and 3 diagonal to each other
                     elif val == 3 and diagonal_val == 3:
                         out1 = (row - 1, col + 1) if toward == ("left", "down") else (row - 1, col - 1)
@@ -138,26 +138,18 @@ class Solver:
                 # Any number at corner
                 if (row == 0 or row == self._input_puzzle.height() - 1) and (
                         col == 0 or col == self._input_puzzle.width() - 1):
-                    if row == 0:
-                        vertical_dir, vertical_opp = ("up", "down")
-                    else:
-                        vertical_dir, vertical_opp = ("down", "up")
-                    if col == 0:
-                        horizontal_dir, horizontal_opp = ("left", "right")
-                    else:
-                        horizontal_dir, horizontal_opp = ("right", "left")
-                    draw_line = False
-                    v = val
+                    vertical_dir, vertical_opp = ("up", "down") if row == 0 else ("down", "up")
+                    horizontal_dir, horizontal_opp = ("left", "right") if col == 0 else ("right", "left")
+                    draw_line, v = (False, val)
                     if val == 2 or val == 3:
                         draw_line, v = (True, val - 2)
                     if v == 0:
-                        d = dir_list[vertical_opp]
-                        self._f((row + d[0], col + d[1]), horizontal_dir, draw_line)
-                        d = dir_list[horizontal_opp]
-                        self._f((row + d[0], col + d[1]), vertical_dir, draw_line)
+                        dv, dh = dir_list[vertical_opp], dir_list[horizontal_opp]
+                        self._f((row + dv[0], col + dv[1]), horizontal_dir, draw_line)
+                        self._f((row + dh[0], col + dh[1]), vertical_dir, draw_line)
                     elif v == 1:
-                        self._f((row, col), horizontal_dir, draw_line)
-                        self._f((row, col), vertical_dir, draw_line)
+                        self._f(pos, horizontal_dir, draw_line)
+                        self._f(pos, vertical_dir, draw_line)
                 # Number 0 at any border
                 elif val == 0 and (row == 0 or row == self._input_puzzle.height() - 1 or
                                    col == 0 or col == self._input_puzzle.width() - 1):
