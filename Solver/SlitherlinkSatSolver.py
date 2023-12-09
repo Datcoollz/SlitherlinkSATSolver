@@ -17,7 +17,6 @@ class Solver:
         self._reload_time = 0
         self._clauses = []
         self._model = []
-        self._init_lines = []
 
         # Init variables for reference
         self._create_tile_line_sat_var()
@@ -52,130 +51,6 @@ class Solver:
                 point["left"] = -1 if j <= 0 else point["left"]
                 point["right"] = -1 if j >= w else point["right"]
                 self._point_sat_var[i].append(point)
-
-    def _calculate_initial_lines(self):
-        dir_list = {
-            "up": (-1, 0),
-            "down": (1, 0),
-            "left": (0, -1),
-            "right": (0, 1),
-        }
-        for row in range(self._input_puzzle.height()):
-            for col in range(self._input_puzzle.width()):
-                pos = (row, col)
-                val = self._input_puzzle.get_tile(pos)
-                if not 0 <= val <= 4: continue
-                # Special cases
-                tiles_next_to = [((row + 1, col), "down", "up", ("left", "right")),
-                                 ((row, col + 1), "right", "left", ("up", "down"))]
-                for tile in tiles_next_to:
-                    next_to = tile[0]
-                    adjacent_val = self._input_puzzle.get_tile(next_to)
-                    direction = tile[1]
-                    opposite_dir = tile[2]
-                    other_dir = tile[3]
-                    # 0 next to 3
-                    if (val == 0 and adjacent_val == 3) or (val == 3 and adjacent_val == 0):
-                        check = self._f((row, col - 1) if direction == "down" else (row - 1, col), direction)
-                        if not check: return False
-                        check = self._f((row, col + 1) if direction == "down" else (row + 1, col), direction)
-                        if not check: return False
-                        if val == 0 and adjacent_val == 3:
-                            for d in other_dir:
-                                if not self._f(next_to, d): return False
-                                t = (row + 2, col) if direction == "down" else (row, col + 2)
-                                if not self._f(t, d, False): return False
-                            if not self._f(next_to, direction): return False
-                            if not self._f((row + 1, col + 1), direction, False): return False
-                            t = (row + 1, col - 1) if direction == "down" else (row - 1, col + 1)
-                            if not self._f(t, direction, False): return False
-                        else:
-                            for d in other_dir:
-                                if not self._f((row, col), d): return False
-                                t = (row - 1, col) if direction == "down" else (row, col - 1)
-                                if not self._f(t, d, False): return False
-                            if not self._f(pos, opposite_dir): return False
-                            t = (row, col - 1) if direction == "down" else (row - 1, col)
-                            if not self._f(t, opposite_dir, False): return False
-                            t = (row, col + 1) if direction == "down" else (row + 1, col)
-                            if not self._f(t, opposite_dir, False): return False
-                    # 3 next to 3
-                    elif val == 3 and adjacent_val == 3:
-                        if not self._f(pos, opposite_dir): return False
-                        if not self._f(pos, direction): return False
-                        t = (row, col - 1) if direction == "down" else (row - 1, col)
-                        if not self._f(t, direction, False): return False
-                        t = (row, col + 1) if direction == "down" else (row + 1, col)
-                        if not self._f(t, direction, False): return False
-                        if not self._f(next_to, direction): return False
-
-                tiles_diagonal_to = [((row + 1, col - 1), ("left", "down"), ("right", "up")),
-                                     ((row + 1, col + 1), ("right", "down"), ("left", "up"))]
-                for tile in tiles_diagonal_to:
-                    diagonal_to = tile[0]
-                    diagonal_val = self._input_puzzle.get_tile(diagonal_to)
-                    toward = tile[1]
-                    against = tile[2]
-                    # 0 and 3 diagonal to each other
-                    if val == 0 and diagonal_val == 3:
-                        if not self._f(diagonal_to, against[0]): return False
-                        if not self._f(diagonal_to, against[1]): return False
-                    elif val == 3 and diagonal_val == 0:
-                        if not self._f(pos, toward[0]): return False
-                        if not self._f(pos, toward[1]): return False
-                    # 3 and 3 diagonal to each other
-                    elif val == 3 and diagonal_val == 3:
-                        out1 = (row - 1, col + 1) if toward == ("left", "down") else (row - 1, col - 1)
-                        out2 = (row + 2, col - 2) if toward == ("left", "down") else (row + 2, col + 2)
-                        if not self._f(pos, against[0]): return False
-                        if not self._f(pos, against[1]): return False
-                        if not self._f(diagonal_to, toward[0]): return False
-                        if not self._f(diagonal_to, toward[1]): return False
-                        if not self._f(out1, toward[0], False): return False
-                        if not self._f(out1, toward[1], False): return False
-                        if not self._f(out2, against[0], False): return False
-                        if not self._f(out2, against[1], False): return False
-                # Any number at corner
-                if (row == 0 or row == self._input_puzzle.height() - 1) and (
-                        col == 0 or col == self._input_puzzle.width() - 1):
-                    vertical_dir, vertical_opp = ("up", "down") if row == 0 else ("down", "up")
-                    horizontal_dir, horizontal_opp = ("left", "right") if col == 0 else ("right", "left")
-                    draw_line, v = (False, val)
-                    if val == 2 or val == 3:
-                        draw_line, v = (True, val - 2)
-                    if v == 0:
-                        dv, dh = dir_list[vertical_opp], dir_list[horizontal_opp]
-                        self._f((row + dv[0], col + dv[1]), horizontal_dir, draw_line)
-                        self._f((row + dh[0], col + dh[1]), vertical_dir, draw_line)
-                    elif v == 1:
-                        self._f(pos, horizontal_dir, draw_line)
-                        self._f(pos, vertical_dir, draw_line)
-                # Number 0 at any border
-                elif val == 0 and (row == 0 or row == self._input_puzzle.height() - 1 or
-                                   col == 0 or col == self._input_puzzle.width() - 1):
-                    if row == 0:
-                        d = ("up", dir_list["left"], dir_list["right"])
-                    elif row == self._input_puzzle.height() - 1:
-                        d = ("down", dir_list["left"], dir_list["right"])
-                    elif col == 0:
-                        d = ("left", dir_list["up"], dir_list["down"])
-                    else:
-                        d = ("right", dir_list["up"], dir_list["down"])
-                    self._f((row + d[1][0], col + d[1][1]), d[0], False)
-                    self._f((row + d[2][0], col + d[2][1]), d[0], False)
-        return True
-
-    def _f(self, pos: (int, int), direction, value=True):
-        x, y = pos
-        if not 0 <= x < self._input_puzzle.height() or not 0 <= y < self._input_puzzle.width():
-            return not value
-        line = self._tile_sat_var[x][y][direction]
-        line = line if value else -line
-        if -line in self._init_lines:
-            return False
-        if line not in self._init_lines:
-            self._init_lines.append(line)
-        return True
 
     def _encode_first_rule(self) -> list[list[int]]:
         clauses = []
@@ -228,17 +103,14 @@ class Solver:
         return clauses
 
     def solve(self):
+        self._model = []
         self._solved = False
         start_time = time.perf_counter()
-        # print("Start solving puzzle of size", self._input_puzzle.width(), "x", self._input_puzzle.height())
-        if True:
-            self._calculate_initial_lines()
-            # print(self._init_lines)
-        self._clauses += self._encode_first_rule() + self._encode_second_rule()
+        self._clauses = self._encode_first_rule() + self._encode_second_rule()
         # print("Total clauses count", len(self._clauses))
         while True:
             s = Glucose42(bootstrap_with=self._clauses)
-            s.solve(self._init_lines)
+            s.solve()
             # s.solve()
             if s.get_model() is None:
                 print("Unsolvable")
